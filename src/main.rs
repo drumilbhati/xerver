@@ -1,5 +1,6 @@
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::thread;
 
 fn handle_client(mut stream: TcpStream) -> io::Result<()> {
     println!("Accepted connection from: {}", stream.peer_addr()?);
@@ -34,9 +35,12 @@ fn main() -> io::Result<()> {
     for stream_result in listener.incoming() {
         match stream_result {
             Ok(stream) => {
-                if let Err(e) = handle_client(stream) {
-                    eprintln!("Error handling client: {}", e);
-                }
+                // spawn a new thread and move the stream into it
+                thread::spawn(move || {
+                    if let Err(e) = handle_client(stream) {
+                        eprintln!("Error handling client: {}", e);
+                    }
+                });
             }
             Err(e) => {
                 eprintln!("Failed to accept connection: {}", e);
