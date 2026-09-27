@@ -17,8 +17,8 @@ docker info
 Run these commands from the repository root:
 
 ```sh
-docker compose -f platform/docker-compose.yml build
-docker compose -f platform/docker-compose.yml run --rm --service-ports dev
+docker compose -f linux/docker-compose.yml build
+docker compose -f linux/docker-compose.yml run --rm --service-ports dev
 ```
 
 The shell is now running on Linux. Check it with:

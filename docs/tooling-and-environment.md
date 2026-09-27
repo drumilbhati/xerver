@@ -1,6 +1,6 @@
 # Tooling, Debugging & Environment Guide
 
-Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, `SO_REUSEPORT`), development on macOS runs inside an Ubuntu Linux container environment (see [platform/LINUX_DEV.md](file:///Users/drumilbhati/Documents/Github/xerver/platform/LINUX_DEV.md)).
+Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, `SO_REUSEPORT`), development on macOS runs inside an Ubuntu Linux container environment (see [linux/LINUX_DEV.md](file:///Users/drumilbhati/Documents/Github/xerver/linux/LINUX_DEV.md)).
 
 ---
 
@@ -10,8 +10,8 @@ Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, 
 From the repository root on macOS:
 
 ```sh
-docker compose -f platform/docker-compose.yml build
-docker compose -f platform/docker-compose.yml run --rm --service-ports dev
+docker compose -f linux/docker-compose.yml build
+docker compose -f linux/docker-compose.yml run --rm --service-ports dev
 ```
 
 ### Compiling with CMake & Ninja
