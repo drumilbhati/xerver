@@ -1,6 +1,6 @@
-# System Architecture
+# System Architecture (Rust)
 
-This document describes the architectural design of `xerver`, including the event-driven Reactor pattern, connection lifecycle, buffer management, and backpressure mechanisms.
+This document describes the architectural design of `xerver` in Rust, including the event-driven Reactor pattern, connection lifecycle, buffer management, and backpressure mechanisms.
 
 ---
 
@@ -18,14 +18,14 @@ flowchart TB
         direction TB
         subgraph NetLoop ["Event Multiplexing (Reactor)"]
             EL["EventLoop (epoll_wait)"]
-            CD["Channel Dispatcher"]
+            CD["Channel / Token Dispatcher"]
             EL --> CD
         end
 
         subgraph Pipeline ["HTTP & Proxy Pipeline"]
-            RL["Rate Limiter (Token Bucket)"]
-            HP["HTTP Parser (Zero-Copy)"]
-            CC["Response Cache (LRU)"]
+            RL["Rate Limiter (Atomic Token Bucket)"]
+            HP["HTTP Parser (Zero-Copy &[u8])"]
+            CC["Response Cache (Arc<RwLock<LRU>>)"]
             LB["Load Balancer (Least-Conn / RR)"]
             BP["Backpressure Controller"]
             HP --> RL --> CC --> LB --> BP
@@ -56,15 +56,15 @@ flowchart TB
 ## 2. Event-Driven Reactor Pattern
 
 `xerver` uses an asynchronous, non-blocking **Reactor Pattern**:
-- A single thread monitors thousands of file descriptors via `epoll_wait`.
-- When an I/O event occurs, the kernel wakes `epoll_wait`, returning an array of triggered `epoll_event` structs.
-- The event loop dispatches each event to its corresponding `Channel` handler (`handle_read()`, `handle_write()`, `handle_close()`).
+- A single thread monitors thousands of file descriptors via `libc::epoll_wait`.
+- When an I/O event occurs, the kernel wakes `epoll_wait`, returning an array of triggered `libc::epoll_event` structs.
+- The event loop dispatches each event to its corresponding socket token (`handle_read()`, `handle_write()`, `handle_close()`).
 
 ### Scaled Model: Thread-Per-Core (Shared-Nothing)
 To scale across multiple CPU cores without lock contention, `xerver` can be deployed in a **Thread-Per-Core** architecture:
 - Each worker thread runs its own isolated `EventLoop` and `epoll` instance.
 - Kernel load-balances incoming connections using the Linux socket flag `SO_REUSEPORT`.
-- No shared state or locks between worker threads during request processing.
+- Rust's type system statically verifies thread boundaries via the `Send` and `Sync` traits.
 
 ---
 
@@ -81,13 +81,13 @@ sequenceDiagram
 
     C->>P: TCP 3-Way Handshake (SYN, SYN-ACK, ACK)
     Note over P: epoll notifies listen_fd (EPOLLIN)
-    P->>P: accept4(..., SOCK_NONBLOCK) -> client_fd
-    P->>P: Register client_fd in epoll for EPOLLIN
+    P->>P: accept() non-blocking -> client TcpStream
+    P->>P: Register client fd in epoll for EPOLLIN
 
     C->>P: HTTP Request (GET /api/data)
-    Note over P: epoll notifies client_fd (EPOLLIN)
-    P->>P: Read bytes into ClientBuffer
-    P->>P: Parse HTTP Request (Zero-copy std::string_view)
+    Note over P: epoll notifies client fd (EPOLLIN)
+    P->>P: Read bytes into Client Buffer
+    P->>P: Parse HTTP Request (Zero-copy &[u8] slice)
     P->>P: Check Cache & Rate Limiting
 
     alt Cache Hit
@@ -98,9 +98,9 @@ sequenceDiagram
         P->>U: Forward HTTP Request
         Note over P,U: Upstream processes request
         U->>P: HTTP Response Stream
-        Note over P: epoll notifies upstream_fd (EPOLLIN)
+        Note over P: epoll notifies upstream fd (EPOLLIN)
         P->>P: Stream upstream bytes to client write buffer
-        P->>C: Flush bytes to client_fd (EPOLLOUT)
+        P->>C: Flush bytes to client (EPOLLOUT)
         P->>P: Return upstream socket to Connection Pool
     end
 ```
@@ -109,13 +109,11 @@ sequenceDiagram
 
 ## 4. Backpressure & Flow Control
 
-One of the most critical aspects of systems programming in reverse proxies is handling **speed mismatches**:
-
-### The Problem
+Handling **speed mismatches**:
 - **Fast Upstream** (1 Gbps local LAN backend)
 - **Slow Client** (50 KBps mobile network)
 
-If the proxy blindly reads from the upstream as fast as possible without checking if the client can accept data, user-space buffers will grow indefinitely, exhausting system RAM and triggering the Linux **OOM Killer**.
+If the proxy blindly reads from the upstream as fast as possible without checking if the client can accept data, user-space memory will grow indefinitely, exhausting system RAM and triggering the Linux **OOM Killer**.
 
 ### The Solution: High/Low Watermarks
 
@@ -141,11 +139,11 @@ stateDiagram-v2
 
 ---
 
-## 5. Memory Management & Zero-Copy
+## 5. Memory Management & Zero-Copy in Rust
 
 ### Zero-Allocation Hot Path
-1. **Buffer Pools**: Reusable fixed-size memory chunks (e.g., 4KB / 16KB pages) prevent dynamic heap allocations (`malloc`/`free`) per request.
-2. **String Views**: HTTP parsing relies on `std::string_view` referencing the underlying raw network buffer rather than allocating `std::string` instances for method, path, and headers.
+1. **Borrowing & Slices**: HTTP parsing borrows slices of the raw byte buffer (`&[u8]`, `&str`) without allocating dynamic `String` instances on the heap.
+2. **Buffer Pools**: Pre-allocated byte vectors (`Vec<u8>`) are recycled using an object pool to avoid memory allocator thrashing.
 3. **Linux `splice(2)` Zero-Copy Relay**:
-   For pure HTTP proxying (without header modification or payload inspection), `splice` pipes bytes directly between the upstream socket and client socket inside kernel space, avoiding any copies into user-space memory:
+   Piping data directly between two socket buffers inside the Linux kernel:
    $$\text{Upstream Socket Buffer} \xrightarrow{\text{splice}} \text{Pipe Buffer} \xrightarrow{\text{splice}} \text{Client Socket Buffer}$$

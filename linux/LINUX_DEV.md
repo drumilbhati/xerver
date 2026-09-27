@@ -28,37 +28,16 @@ uname -a
 cat /etc/os-release
 ```
 
-The container includes C++23 tooling, CMake, Ninja, gdb, strace, perf support,
+The container includes Rust tooling (rustc, cargo), gdb, strace, perf support,
 tcpdump, `ss`, netcat, curl, and wrk.
-
-## Verify epoll
-
-Linux headers and the `epoll` system call are available inside the container:
-
-```sh
-cat >/tmp/epoll_check.cpp <<'EOF'
-#include <sys/epoll.h>
-#include <unistd.h>
-#include <iostream>
-
-int main() {
-    int fd = epoll_create1(EPOLL_CLOEXEC);
-    if (fd == -1) return 1;
-    std::cout << "epoll is available\n";
-    close(fd);
-}
-EOF
-g++ -std=c++20 -Wall -Wextra -pedantic /tmp/epoll_check.cpp -o /tmp/epoll_check
-/tmp/epoll_check
-```
 
 ## Typical workflow
 
-Inside the container, configure and build with:
+Inside the container, build and run with:
 
 ```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=23
-cmake --build build
+cargo build
+cargo run
 ```
 
 Run a server, then from another macOS terminal test a published port:
@@ -71,7 +50,7 @@ nc -vz localhost 8080
 For system-call tracing:
 
 ```sh
-strace -f -e trace=network ./build/xerver
+strace -f -e trace=network ./target/debug/xerver
 ```
 
 For socket inspection:

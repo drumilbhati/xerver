@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clang \
     clang-format \
     clang-tidy \
+    rustc \
+    cargo \
     cmake \
     ninja-build \
     pkg-config \

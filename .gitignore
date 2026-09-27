@@ -36,3 +36,8 @@ perf.data.old
 *.pcap
 core
 core.*
+
+
+# Added by cargo
+
+/target

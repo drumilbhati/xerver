@@ -1,6 +1,6 @@
-# Tooling, Debugging & Environment Guide
+# Tooling, Debugging & Environment Guide (Rust)
 
-Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, `SO_REUSEPORT`), development on macOS runs inside an Ubuntu Linux container environment (see [linux/LINUX_DEV.md](file:///Users/drumilbhati/Documents/Github/xerver/linux/LINUX_DEV.md)).
+Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, `SO_REUSEPORT`), development on macOS runs inside an Ubuntu/Debian Linux container environment (see [linux/LINUX_DEV.md](file:///Users/drumilbhati/Documents/Github/xerver/linux/LINUX_DEV.md)).
 
 ---
 
@@ -10,22 +10,28 @@ Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, 
 From the repository root on macOS:
 
 ```sh
-docker compose -f linux/docker-compose.yml build
-docker compose -f linux/docker-compose.yml run --rm --service-ports dev
+# Start interactive Debian Linux environment
+xdev
 ```
 
-### Compiling with CMake & Ninja
+### Compiling and Running with Cargo
 Inside the container:
 
 ```sh
-# Configure Debug build with symbols
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=23
+# Fast debug build
+cargo build
 
-# Compile
-cmake --build build
+# Run the server
+cargo run
 
-# Run tests
-ctest --test-dir build --output-on-failure
+# Run with release optimizations (zero-cost abstractions enabled)
+cargo run --release
+
+# Run unit and integration tests
+cargo test
+
+# Run Rust's linter for systems idiomatic checks
+cargo clippy
 ```
 
 ---
@@ -33,17 +39,17 @@ ctest --test-dir build --output-on-failure
 ## 2. Systems Diagnostics Cheatsheet
 
 ### Tracing System Calls (`strace`)
-`strace` intercepts and records the system calls made by `xerver`, giving visibility into kernel interactions:
+`strace` intercepts and records the system calls made by `xerver`:
 
 ```sh
 # Trace network-specific syscalls (socket, bind, accept, epoll_wait, etc.)
-strace -f -e trace=network ./build/xerver
+strace -f -e trace=network ./target/debug/xerver
 
 # Trace read and write operations including byte counts
-strace -f -e trace=read,write,epoll_wait ./build/xerver
+strace -f -e trace=read,write,epoll_wait ./target/debug/xerver
 
 # Collect call counts, total time, and errors per syscall
-strace -c ./build/xerver
+strace -c ./target/debug/xerver
 ```
 
 ### Socket Inspection (`ss` & `netstat`)
@@ -76,14 +82,13 @@ tcpdump -i any -w /workspace/capture.pcap port 8080
 ## 3. Benchmarking & Load Testing
 
 ### Using `wrk`
-`wrk` is a modern HTTP benchmarking tool capable of generating high load from multiple threads:
+`wrk` generates high-concurrency HTTP traffic to test throughput and latency:
 
 ```sh
 # Benchmark with 4 threads, 100 concurrent connections, for 30 seconds
 wrk -t4 -c100 -d30s --latency http://localhost:8080/
 
-# Test Keep-Alive vs connection closure:
-# To disable keep-alive and test raw connection handshake overhead:
+# Test raw connection setup/teardown (disabling Keep-Alive):
 wrk -t4 -c100 -d30s -H "Connection: close" http://localhost:8080/
 ```
 
@@ -107,18 +112,4 @@ perf record -F 99 -g -p $(pgrep xerver) -- sleep 20
 
 # Inspect the profile report
 perf report -g
-```
-
----
-
-## 5. Memory Safety & Sanitizers
-
-Enable Clang/GCC sanitizers during CMake configuration to catch memory corruption and undefined behavior before runtime crashes:
-
-```sh
-# AddressSanitizer & UndefinedBehaviorSanitizer
-cmake -S . -B build-asan -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
-cmake --build build-asan
 ```
