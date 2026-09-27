@@ -1,0 +1,21 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: platform/Dockerfile
+    image: xerver-linux-dev:ubuntu24.04
+    container_name: xerver-linux-dev
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    stdin_open: true
+    tty: true
+    # Required by perf. The server itself does not need these privileges.
+    cap_add:
+      - PERFMON
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
