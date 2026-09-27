@@ -1,0 +1,38 @@
+# Build directories & CMake output
+build/
+build-*/
+cmake-build-*/
+out/
+bin/
+CMakeUserPresets.json
+compile_commands.json
+
+# Compiled binaries and object files
+*.o
+*.obj
+*.so
+*.dylib
+*.a
+*.out
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editor & IDE configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.clangd/
+
+# Profiling, tracing & logs
+*.log
+perf.data
+perf.data.old
+*.pcap
+core
+core.*
