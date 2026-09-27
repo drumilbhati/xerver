@@ -32,28 +32,28 @@ Frameworks like Tokio and Hyper handle asynchronous event loops, connection pool
 mindmap
   root((xerver))
     Networking
-      TCP/IP Handshake & Teardown
-      Socket Buffering & Windows
-      HTTP/1.1 Streaming & Chunking
-      Keep-Alive & Connection Reuse
+      TCP/IP Handshake and Teardown
+      Socket Buffering and Windows
+      HTTP/1.1 Streaming and Chunking
+      Keep-Alive and Connection Reuse
       Backpressure Flow Control
-    Linux & OS
-      System Calls & FD Tables
-      Virtual Memory & Kernel Boundary
+    Linux and OS
+      System Calls and FD Tables
+      Virtual Memory and Kernel Boundary
       Thread Scheduling Costs
-      epoll & Event Multiplexing
-      Zero-copy splice & sendfile
+      epoll and Event Multiplexing
+      Zero-Copy splice and sendfile
     Rust Systems
-      Ownership & Borrow Checker
+      Ownership and Borrow Checker
       Drop Trait for Automatic RAII
-      Zero-Copy Slices (&[u8], &str)
-      Safe Concurrency (Send, Sync, Arc)
-      Interfacing with C/POSIX via libc
+      Zero-Copy Byte and String Slices
+      Safe Concurrency with Send and Sync
+      Interfacing with C and POSIX via libc
     Performance Engineering
-      wrk Throughput & Latency Profiling
+      wrk Throughput and Latency Profiling
       strace Syscall Auditing
       perf Hardware Counter Analysis
-      Context Switching & Cache Thrashing
+      Context Switching and Cache Thrashing
 ```
 
 ---

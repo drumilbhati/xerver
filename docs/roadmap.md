@@ -7,7 +7,7 @@ flowchart TD
     M1["1. TCP Echo Server<br/><i>(Blocking I/O, std::net::TcpListener)</i>"] --> M2["2. Multi-client Server<br/><i>(std::thread, Thread Pool)</i>"]
     M2 --> M3["3. Non-blocking Sockets<br/><i>(set_nonblocking, WouldBlock)</i>"]
     M3 --> M4["4. epoll Event Loop<br/><i>(libc::epoll, Reactor Pattern)</i>"]
-    M4 --> M5["5. HTTP/1.1 Server<br/><i>(Zero-Copy &[u8] Parser, Keep-Alive)</i>"]
+    M4 --> M5["5. HTTP/1.1 Server<br/><i>(Zero-Copy Byte Slice Parser, Keep-Alive)</i>"]
     M5 --> M6["6. Reverse Proxy<br/><i>(Dual-Socket Bridge, Backpressure)</i>"]
     M6 --> M7["7. Load Balancing<br/><i>(Round-Robin, Health Checks)</i>"]
     M7 --> M8["8. Connection Pooling<br/><i>(Upstream Keep-Alive Reuse)</i>"]

@@ -24,8 +24,8 @@ flowchart TB
 
         subgraph Pipeline ["HTTP & Proxy Pipeline"]
             RL["Rate Limiter (Atomic Token Bucket)"]
-            HP["HTTP Parser (Zero-Copy &[u8])"]
-            CC["Response Cache (Arc<RwLock<LRU>>)"]
+            HP["HTTP Parser (Zero-Copy Byte Slices)"]
+            CC["Response Cache (Arc-RwLock LRU)"]
             LB["Load Balancer (Least-Conn / RR)"]
             BP["Backpressure Controller"]
             HP --> RL --> CC --> LB --> BP
