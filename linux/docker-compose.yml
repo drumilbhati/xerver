@@ -3,7 +3,7 @@ services:
     build:
       context: ..
       dockerfile: linux/Dockerfile
-    image: xerver-linux-dev:ubuntu24.04
+    image: xerver-linux-dev:debian-bookworm
     container_name: xerver-linux-dev
     working_dir: /workspace
     volumes:

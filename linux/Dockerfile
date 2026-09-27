@@ -1,29 +1,59 @@
-FROM ubuntu:24.04
+FROM debian:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential \
-       clang \
-       cmake \
-       ninja-build \
-       gdb \
-       strace \
-       linux-tools-generic \
-       iproute2 \
-       iputils-ping \
-       net-tools \
-       tcpdump \
-       netcat-openbsd \
-       curl \
-       git \
-       pkg-config \
-       libgtest-dev \
-       wrk \
+# Update and install complete systems development toolchain, full man pages, and editors
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Compilers & Build Tools
+    build-essential \
+    clang \
+    clang-format \
+    clang-tidy \
+    cmake \
+    ninja-build \
+    pkg-config \
+    libgtest-dev \
+    ca-certificates \
+    # Debugging & Systems Profiling
+    gdb \
+    strace \
+    valgrind \
+    # Full Linux Manual Pages (Syscalls, Sockets, Standards)
+    man-db \
+    manpages \
+    manpages-dev \
+    # Text Editors
+    neovim \
+    vim \
+    nano \
+    # Terminal Ergonomics & Utilities
+    tmux \
+    zsh \
+    git \
+    ripgrep \
+    fd-find \
+    tree \
+    htop \
+    less \
+    curl \
+    wget \
+    jq \
+    sudo \
+    # Networking Stack & Benchmarking
+    iproute2 \
+    iputils-ping \
+    net-tools \
+    tcpdump \
+    netcat-openbsd \
+    dnsutils \
+    socat \
+    wrk \
+    && mandb -c \
     && rm -rf /var/lib/apt/lists/*
 
+# Create dev user with passwordless sudo
 RUN useradd --create-home --shell /bin/bash dev \
+    && echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
     && mkdir -p /workspace \
     && chown -R dev:dev /workspace
 
