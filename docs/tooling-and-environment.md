@@ -1,17 +1,16 @@
 # Tooling, Debugging & Environment Guide (Rust)
 
-Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, `SO_REUSEPORT`), development on macOS runs inside an Ubuntu/Debian Linux container environment (see [linux/LINUX_DEV.md](file:///Users/drumilbhati/Documents/Github/xerver/linux/LINUX_DEV.md)).
+Because `xerver` leverages Linux-specific kernel interfaces (`epoll`, `splice`, `SO_REUSEPORT`), development on macOS runs inside an **OrbStack Linux VM** (or any native Linux environment).
 
 ---
 
 ## 1. Quickstart Development Workflow
 
-### Launching the Linux Container
-From the repository root on macOS:
+### Development inside the OrbStack Linux VM
+In your OrbStack Linux VM terminal, navigate to the mounted project directory:
 
 ```sh
-# Start interactive Debian Linux environment
-xdev
+cd /path/to/xerver
 ```
 
 ### Compiling and Running with Cargo
