@@ -1,21 +1,33 @@
-use std::io::{self, Read, Write};
+use std::io::{self, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
 fn handle_client(mut stream: TcpStream) -> io::Result<()> {
     println!("Accepted connection from: {}", stream.peer_addr()?);
+    stream.set_nonblocking(true)?;
 
     let mut buffer = [0u8; 1024];
     loop {
         // Read incoming bytes into our mutable buffer
-        let bytes_read = stream.read(&mut buffer)?;
-
-        // In TCP, 0 bytes read means the client closed the connection (EOF)
-        if bytes_read == 0 {
-            println!("Client disconnected cleanly.");
-            break;
+        match stream.read(&mut buffer) {
+            Ok(0) => {
+                // EOF, close the connection
+                println!("Client disconnected cleanly.");
+                break;
+            }
+            Ok(bytes_read) => {
+                // We received actual data.
+                stream.write(&buffer[..bytes_read])?;
+            }
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+                // No data available right now.
+                // The client is still connected, just idle!
+                // We do NOT break or return an error.}
+            }
+            Err(e) => {
+                return Err(e);
+            }
         }
-        stream.write_all(&buffer[..bytes_read])?;
     }
     // Notice: We don't call close(stream).
     // When handle_client returns, 'stream' goes out of scope and its Drop
